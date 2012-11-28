@@ -1,9 +1,40 @@
-.carte1 {
-	float: left;
-	width: 50%;
+h1 {
+	clear: both;
 }
 
-.carte2 {
+.cartes {
+	width: 100%;
+	height: 700px;
+	margin-bottom: 5px;
+	
+}
+
+.carte {
 	float: left;
-	width: 50%;
+	width: 49%;
+	border: 1px grey solid; 
+}
+
+.carte img{
+	width: 100%;
+}
+
+.alert {
+	background-color: red;
+}
+
+.warning {
+	background-color: orange;
+}
+
+body {
+	font-family: Helvetica,roman;
+}
+
+table.summary tbody {
+    border: 2px solid black;
+    background: AntiqueWhite;
+}
+table.summary thead {
+    background: Gold;
 }

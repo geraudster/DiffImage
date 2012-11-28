@@ -12,6 +12,7 @@ import os
 import magic
 import urllib
 import lxml.html
+from datetime import datetime
 
 def printdiff(value, filename=None):
     if filename:
@@ -20,6 +21,7 @@ def printdiff(value, filename=None):
         print  value
 
 def getimage(filename, suffix, prefix = u'.'):
+    elapsed_time = 0
     if filename.startswith('http://'):
         opener = urllib.FancyURLopener({})
         (htmlfilename, header) = opener.retrieve(filename)
@@ -30,16 +32,19 @@ def getimage(filename, suffix, prefix = u'.'):
         title = tree.get_element_by_id('viewProduit:titreCarte').text
         print title
         realfilename = '/'.join([prefix, '.'.join([title, suffix, 'png'])])
+        
+        start_time = datetime.now()
         (realfilename, header) = opener.retrieve(r.attrib['src'], realfilename)
+        elapsed_time = (datetime.now() - start_time).microseconds / 1000
         print "Retrieved IMG file into %s (size:%d)" % (realfilename, os.path.getsize(realfilename))
     else:
         realfilename = filename
-    return (realfilename, Image.open(realfilename))
+    return (realfilename, Image.open(realfilename), elapsed_time)
     
 def rmsdiff(file1, file2, prefix = '.'):
     "Calculate the root-mean-square difference between two images"
-    (filename1, im1) = getimage(file1, '1', prefix)
-    (filename2, im2) = getimage(file2, '2', prefix)
+    (filename1, im1, time1) = getimage(file1, '1', prefix)
+    (filename2, im2, time2) = getimage(file2, '2', prefix)
     h1 = im1.convert("RGB").histogram()
     h2 = im2.convert("RGB").histogram()
 
@@ -58,7 +63,7 @@ def rmsdiff(file1, file2, prefix = '.'):
     
     rms = math.sqrt(reduce(operator.add,
                     map(lambda a,b: (a-b)**2, h1, h2))/len(h1))
-    return (filename1, filename2, rms)
+    return (filename1, filename2, rms, time1, time2)
 
 def diffdirectory(dir1, dir2):
     for d in os.listdir(dir1):
