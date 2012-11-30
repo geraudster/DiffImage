@@ -7,12 +7,14 @@ Created on Oct 16, 2012
 
 import math, operator
 import sys
-import Image, ImageStat, ImageChops
+import Image
+
 import os
 import magic
 import urllib
 import lxml.html
 from datetime import datetime
+import ImageDraw
 
 def printdiff(value, filename=None):
     if filename:
@@ -34,7 +36,17 @@ def getimage(filename, suffix, prefix = u'.'):
         realfilename = '/'.join([prefix, '.'.join([title, suffix, 'png'])])
         
         start_time = datetime.now()
-        (realfilename, header) = opener.retrieve(r.attrib['src'], realfilename)
+        try:
+            (realfilename, header) = opener.retrieve(r.attrib['src'], realfilename)
+            if os.path.getsize(realfilename) == 0:
+                raise RuntimeError('Fichier vide') 
+        except:
+            im = Image.new("RGB", (700,700), "red")
+            draw = ImageDraw.Draw(im)
+            draw.text( (0,50), unicode('Erreur','UTF-8'))
+            del draw
+            im.save(realfilename, 'PNG')
+
         elapsed_time = (datetime.now() - start_time).microseconds / 1000
         print "Retrieved IMG file into %s (size:%d)" % (realfilename, os.path.getsize(realfilename))
     else:
@@ -48,19 +60,6 @@ def rmsdiff(file1, file2, prefix = '.'):
     h1 = im1.convert("RGB").histogram()
     h2 = im2.convert("RGB").histogram()
 
-#    print ImageStat.Stat(im1).rms
-#    print ImageStat.Stat(im2).rms
-#    print ImageStat.Stat(im1.convert("RGB")).rms
-#    print ImageStat.Stat(im2.convert("RGB")).rms
-#    
-#    print "file1 RMS: %d" %ImageStat.Stat(im1).rms[0]
-#    print "file2 RMS: %d" %ImageStat.Stat(im2).rms[0]
-#    
-#    print "file1 histogram size: %d" % len(h1)
-#    print "file2 histogram size: %d" % len(h2)
-#    
-#    print ImageStat.Stat(ImageChops.difference(im1.convert("RGB"), im2)).rms
-    
     rms = math.sqrt(reduce(operator.add,
                     map(lambda a,b: (a-b)**2, h1, h2))/len(h1))
     return (filename1, filename2, rms, time1, time2)
