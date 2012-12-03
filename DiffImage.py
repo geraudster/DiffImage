@@ -66,7 +66,7 @@ def getimage(filename, suffix, prefix=u'.'):
                 realfilename = '/'.join([prefix, '.'.join([title, suffix, 'png'])])
                 
                 start_time = datetime.now()
-                (realfilename, header) = _getUrlContent(r.attrib['src'], filename=realfilename)
+                realfilename = _getUrlContent(r.attrib['src'], filename=realfilename)
                 if os.path.getsize(realfilename) == 0:
                     raise RuntimeError('Fichier vide')
 
