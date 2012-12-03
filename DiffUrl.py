@@ -43,7 +43,8 @@ if __name__ == '__main__':
                 url1 = '/'.join([base1, params])
                 url2 = '/'.join([base2, params])
                 (filename1, filename2, rms, time1, time2) = rmsdiff(url1, url2, prefix=results)
-                print 'Diff between %s... and %s... : %d' % (url1[0:60],  url2[0:60], rms)
+#                print 'Diff between %s... and %s... : %d' % (url1[0:60],  url2[0:60], rms)
+                print 'Diff between %s... and %s... : %d' % (url1,  url2[0:60], rms)
                 if rms > 300:
                     classname = 'alert'
                 elif rms > 150:

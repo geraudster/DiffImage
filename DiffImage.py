@@ -11,39 +11,70 @@ import Image
 
 import os
 import magic
-import urllib
+import urllib2
 import lxml.html
 from datetime import datetime
 import ImageDraw
+import tempfile
+import cookielib
+import shutil
 
 def printdiff(value, filename=None):
     if filename:
-        print  "RMS %s: %s"% (filename, value)
+        print  "RMS %s: %s" % (filename, value)
     else:
         print  value
 
-def getimage(filename, suffix, prefix = u'.'):
+def _getUrlContent(url, filename=None, buffer_size=1024):
+    cookiejar = cookielib.CookieJar()
+    urlOpener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookiejar))
+    f = urlOpener.open(url)
+    if filename is None: 
+        filename = tempfile.NamedTemporaryFile().name
+    
+    with open(filename, 'w+b') as tmp_file:
+        b = f.read(buffer_size)
+        while b != b'':
+            tmp_file.write(b)
+            b = f.read(buffer_size)
+
+    return filename
+
+def getimage(filename, suffix, prefix=u'.'):
     elapsed_time = 0
     if filename.startswith('http://'):
-        opener = urllib.FancyURLopener({})
-        (htmlfilename, header) = opener.retrieve(filename)
-        print "Retrieved HTML file into %s (size:%d)" % (htmlfilename, os.path.getsize(htmlfilename))
-        
-        tree = lxml.html.parse(htmlfilename).getroot()
-        r = tree.get_element_by_id('viewProduit:imgCarte')
-        title = tree.get_element_by_id('viewProduit:titreCarte').text
-        print title
-        realfilename = '/'.join([prefix, '.'.join([title, suffix, 'png'])])
-        
-        start_time = datetime.now()
         try:
-            (realfilename, header) = opener.retrieve(r.attrib['src'], realfilename)
-            if os.path.getsize(realfilename) == 0:
-                raise RuntimeError('Fichier vide') 
-        except:
-            im = Image.new("RGB", (700,700), "red")
+            # By default
+            realfilename = '/'.join([prefix, 'failed.png'])
+            
+            start_time = datetime.now()
+            retrfilename = _getUrlContent(filename) 
+
+            filetype = magic.from_file(retrfilename, mime=True)
+            print filetype
+            if filetype.startswith('image'):
+                realfilename = '/'.join([prefix, os.path.basename(retrfilename)])
+                realfilename = '.'.join([realfilename, 'png'])
+                shutil.move(retrfilename, realfilename)
+            else:
+                print "Retrieved HTML file into %s (size:%d)" % (retrfilename, os.path.getsize(retrfilename))
+
+                tree = lxml.html.parse(retrfilename).getroot()
+                r = tree.get_element_by_id('viewProduit:imgCarte')
+                title = tree.get_element_by_id('viewProduit:titreCarte').text
+                print title
+                realfilename = '/'.join([prefix, '.'.join([title, suffix, 'png'])])
+                
+                start_time = datetime.now()
+                (realfilename, header) = _getUrlContent(r.attrib['src'], filename=realfilename)
+                if os.path.getsize(realfilename) == 0:
+                    raise RuntimeError('Fichier vide')
+
+        except Exception, e:
+            print e
+            im = Image.new("RGB", (700, 700), "red")
             draw = ImageDraw.Draw(im)
-            draw.text( (0,50), unicode('Erreur','UTF-8'))
+            draw.text((0, 50), unicode('Erreur', 'UTF-8'))
             del draw
             im.save(realfilename, 'PNG')
 
@@ -53,7 +84,7 @@ def getimage(filename, suffix, prefix = u'.'):
         realfilename = filename
     return (realfilename, Image.open(realfilename), elapsed_time)
     
-def rmsdiff(file1, file2, prefix = '.'):
+def rmsdiff(file1, file2, prefix='.'):
     "Calculate the root-mean-square difference between two images"
     (filename1, im1, time1) = getimage(file1, '1', prefix)
     (filename2, im2, time2) = getimage(file2, '2', prefix)
@@ -61,7 +92,7 @@ def rmsdiff(file1, file2, prefix = '.'):
     h2 = im2.convert("RGB").histogram()
 
     rms = math.sqrt(reduce(operator.add,
-                    map(lambda a,b: (a-b)**2, h1, h2))/len(h1))
+                    map(lambda a, b: (a - b) ** 2, h1, h2)) / len(h1))
     return (filename1, filename2, rms, time1, time2)
 
 def diffdirectory(dir1, dir2):
@@ -72,9 +103,9 @@ def diffdirectory(dir1, dir2):
         else:
             filetype = magic.from_file(fullpath, mime=True)
             if filetype.startswith('image'):
-                printdiff(rmsdiff(fullpath, '/'.join([dir2,d])), filename=d)
+                printdiff(rmsdiff(fullpath, '/'.join([dir2, d])), filename=d)
             else:
-                sys.stderr.write("%s skipped: not an image\n" %d)
+                sys.stderr.write("%s skipped: not an image\n" % d)
 
     
 if __name__ == '__main__':
