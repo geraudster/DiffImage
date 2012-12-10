@@ -19,6 +19,8 @@ import tempfile
 import cookielib
 import shutil
 
+MODE="RGBA"
+
 def printdiff(value, filename=None):
     if filename:
         print  "RMS %s: %s" % (filename, value)
@@ -94,8 +96,8 @@ def rmsdiff(file1, file2, prefix='.'):
     "Calculate the root-mean-square difference between two images"
     (filename1, im1, time1) = getimage(file1, '1', prefix)
     (filename2, im2, time2) = getimage(file2, '2', prefix)
-    h1 = im1.convert("RGB").histogram()
-    h2 = im2.convert("RGB").histogram()
+    h1 = im1.convert(MODE).histogram()
+    h2 = im2.convert(MODE).histogram()
 
     rms = math.sqrt(reduce(operator.add,
                     map(lambda a, b: (a - b) ** 2, h1, h2)) / len(h1))
