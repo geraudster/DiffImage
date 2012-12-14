@@ -6,18 +6,21 @@ Created on Nov 27, 2012
 '''
 
 import sys
-from  DiffImage import rmsdiff
+from  DiffImage import DiffImage
 import os
 import codecs
 import uuid
 import time
 import shutil
+import cv
 
 if __name__ == '__main__':
     base1 = sys.argv[1]
     base2 = sys.argv[2]
     urls_file = sys.argv[3]
     output_dir = sys.argv[4]
+    
+    misc_measures={'CORREL': cv.CV_COMP_CORREL, 'CHISQR': cv.CV_COMP_CHISQR, 'INTERSECT' : cv.CV_COMP_INTERSECT, 'BHATTACHARYYA': cv.CV_COMP_BHATTACHARYYA}
     
     with codecs.open(urls_file, encoding = 'utf-8') as f:
         line = f.readline()
@@ -42,7 +45,8 @@ if __name__ == '__main__':
                 params = '&'.join([url.strip('"'), 'idCalques=1'])
                 url1 = '/'.join([base1, params])
                 url2 = '/'.join([base2, params])
-                (filename1, filename2, rms, time1, time2) = rmsdiff(url1, url2, prefix=results)
+                diff = DiffImage(url1, url2, prefix=results)
+                (filename1, filename2, rms, time1, time2) = diff.rmsdiff()
 #                print 'Diff between %s... and %s... : %d' % (url1[0:60],  url2[0:60], rms)
                 print 'Diff between %s... and %s... : %d' % (url1,  url2[0:60], rms)
                 if rms > 300:
@@ -52,9 +56,20 @@ if __name__ == '__main__':
                 else:
                     classname = 'success'
                 lineuuid = uuid.uuid1()
-                summary.append((name, classname, lineuuid, rms, time1, time2))
+                misc = {}
+                for (measure, algo) in misc_measures.items():
+                    (_, _, value, _, _) = diff.diff2(algo=algo)
+                    misc[measure] = value
+
+                summary.append((name, classname, lineuuid, rms, time1, time2, misc))
                 result.write(u'<h1 id="%s" class="%s">%s</h1>' % (lineuuid, classname, name))
-                result.write(u'<span id="rms" class="%s">RMS: %d</span>' %(classname,rms))
+                result.write(u'<ul id="stats-%s">' %(lineuuid))
+                result.write(u'<li class="%s">RMS: %d</li>'%(classname,rms))
+                
+                for measure in sorted(misc.keys()):
+                    result.write(u'<li class="%s">%s: %f</li>' %('',measure, misc[measure]))
+                result.write(u'</ul>')
+                
                 result.write(u'<div class="cartes">')
                 result.write(u'<div class="carte1 carte">')
                 result.write(u'<a href="%s" target="_blank"><img src="%s"/></a>' % (url1, filename1.replace(output_dir,'.',1)))
@@ -71,10 +86,17 @@ if __name__ == '__main__':
                 line = f.readline()
 
             result.write(u'<h1 id="summary">Résumé</h1>')
-            result.write(u'<table class="summary"><thead><tr><th>Nom</th><th>Status</th><th>RMS</th><th>Temps ancien <br/>(en ms)</th><th>Temps nouveau <br/>(en ms)</th></tr></thead>')
+            result.write(u'<table class="summary"><thead><tr><th>Nom</th><th>Status</th><th>RMS</th><th>Temps ancien <br/>(en ms)</th><th>Temps nouveau <br/>(en ms)</th>')
+            for measure in sorted(misc_measures.keys()):
+                result.write(u'<th>%s</th>' % measure)
+
+            result.write(u'</tr></thead>')
             result.write(u'<tbody>')
-            for (name, classname, lineuuid, rms, time1, time2) in summary:
-                result.write(u'<tr><td><a href="#%s">%s</a></td><td class="%s">%s</td><td>%d</td><td>%d</td><td>%d</td></tr>' % (lineuuid, name, classname, classname, rms, time1, time2))
+            for (name, classname, lineuuid, rms, time1, time2, misc) in summary:
+                result.write(u'<tr><td><a href="#%s">%s</a></td><td class="%s">%s</td><td>%d</td><td>%d</td><td>%d</td>' % (lineuuid, name, classname, classname, rms, time1, time2))
+                for measure in sorted(misc.keys()):
+                    result.write(u'<td>%f</td>'% misc[measure])
+                result.write(u'</tr>')
             result.write(u'</tbody>')
             result.write(u'</table>')
             result.write(u'</body></html>')
