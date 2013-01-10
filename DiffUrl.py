@@ -31,7 +31,15 @@ if __name__ == '__main__':
         shutil.copy('results.css', output_dir)
 
         with codecs.open('/'.join([output_dir, 'result.html']), mode='w', encoding='utf-8') as result:
-            result.write(u'<html><head><link rel=stylesheet type=text/css href="results.css"/></head><body>')
+            result.write(u'''
+            <html>
+                <head>
+                    <link rel="stylesheet" href="http://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css" />
+                    <script src="http://code.jquery.com/jquery-1.8.3.js"></script>
+                    <script src="http://code.jquery.com/ui/1.9.2/jquery-ui.js"></script>
+                    <link rel=stylesheet type=text/css href="results.css"/>
+                </head>
+            <body>''')
             result.write(u'<div class="generated">Généré le %s</div>' % time.strftime('%d/%m/%y %H:%M'))
             result.write(u'<div class="notice"><ul><li>A gauche : %s</li>' % base1)
             result.write(u'<li>A droite : %s</li></ul></div>' % base2)
@@ -63,13 +71,18 @@ if __name__ == '__main__':
 
                 summary.append((name, classname, lineuuid, rms, time1, time2, misc))
                 result.write(u'<h1 id="%s" class="%s">%s</h1>' % (lineuuid, classname, name))
-                result.write(u'<ul id="stats-%s">' %(lineuuid))
-                result.write(u'<li class="%s">RMS: %d</li>'%(classname,rms))
+                result.write(u'<div id="stats-%s">' %(lineuuid))
+                result.write(u'<h3>RMS</h3>')
+                result.write(u'<ul><li class="%s">RMS: %d</li></ul>'%(classname,rms))
                 
+                result.write(u'<h3>Autres</h3>')
+                result.write(u'<ul>')
                 for measure in sorted(misc.keys()):
                     result.write(u'<li class="%s">%s: %f</li>' %('',measure, misc[measure]))
                 result.write(u'</ul>')
-                
+
+                result.write(u'</div><br/>')
+
                 result.write(u'<div class="cartes">')
                 result.write(u'<div class="carte1 carte">')
                 result.write(u'<a href="%s" target="_blank"><img src="%s"/></a>' % (url1, filename1.replace(output_dir,'.',1)))
@@ -78,7 +91,7 @@ if __name__ == '__main__':
                 result.write(u'<a href="%s" target="_blank"><img src="%s"/></a>' % (url2, filename2.replace(output_dir,'.',1)))
                 result.write(u'</div>')
                 result.write(u'</div>')
-                result.write(u'<div class="params"><ul>')
+                result.write(u'<div id="params-%s" class="params"><h3>Paramètres</h3><ul>' % lineuuid)
                 for param in params.split('?')[1].split('&'):
                     result.write(u'<li>%s</li>'% param)
                 result.write(u'</ul></div>')
@@ -99,5 +112,23 @@ if __name__ == '__main__':
                 result.write(u'</tr>')
             result.write(u'</tbody>')
             result.write(u'</table>')
+
+            result.write(u'<script>')
+            for (_, _, lineuuid, _, _, _, _) in summary:
+                result.write(u'''
+                    $( "#stats-%s" ).accordion({
+                        collapsible: true,
+                        heightStyle: "content",
+                    });
+                    ''' % lineuuid)
+                result.write(u'''
+                    $( "#params-%s" ).accordion({
+                        collapsible: true,
+                        heightStyle: "content",
+                        active: false,
+                    });
+                    ''' % lineuuid)
+            result.write(u'</script>')
+
             result.write(u'</body></html>')
             
