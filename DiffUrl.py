@@ -75,10 +75,15 @@ if __name__ == '__main__':
                 result.write(u'<h3>RMS</h3>')
                 result.write(u'<ul><li class="%s">RMS: %d</li></ul>'%(classname,rms))
                 
-                result.write(u'<h3>Autres</h3>')
+                result.write(u'<h3>Autres stats</h3>')
                 result.write(u'<ul>')
                 for measure in sorted(misc.keys()):
                     result.write(u'<li class="%s">%s: %f</li>' %('',measure, misc[measure]))
+                result.write(u'</ul>')
+                result.write(u'<h3>Paramètres</h3>' % lineuuid)
+                result.write(u'<ul>')
+                for param in params.split('?')[1].split('&'):
+                    result.write(u'<li>%s</li>'% param)
                 result.write(u'</ul>')
 
                 result.write(u'</div><br/>')
@@ -91,10 +96,6 @@ if __name__ == '__main__':
                 result.write(u'<a href="%s" target="_blank"><img src="%s"/></a>' % (url2, filename2.replace(output_dir,'.',1)))
                 result.write(u'</div>')
                 result.write(u'</div>')
-                result.write(u'<div id="params-%s" class="params"><h3>Paramètres</h3><ul>' % lineuuid)
-                for param in params.split('?')[1].split('&'):
-                    result.write(u'<li>%s</li>'% param)
-                result.write(u'</ul></div>')
                 result.write(u'<br/>')
                 line = f.readline()
 
@@ -119,13 +120,6 @@ if __name__ == '__main__':
                     $( "#stats-%s" ).accordion({
                         collapsible: true,
                         heightStyle: "content",
-                    });
-                    ''' % lineuuid)
-                result.write(u'''
-                    $( "#params-%s" ).accordion({
-                        collapsible: true,
-                        heightStyle: "content",
-                        active: false,
                     });
                     ''' % lineuuid)
             result.write(u'</script>')
